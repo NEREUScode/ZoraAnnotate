@@ -250,5 +250,165 @@ class ImageLabel(QLabel):
         self.temp_eraser_mask = None
         self.update()
 
-    # the painter event
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.scaled_pixmap:
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.Antialiasing)
+
+            # draw the image
+            painter.drawPixmap(int(self.offset_x), int(self.offset_y), self.scaled_pixmap)
+
+            # draw annotations 
+            self.draw_annotations(painter)
+
+            # draw other elements
+            if self.editing_polygon:
+                self.draw_editing_polygon(painter)
+
+            if self.drawing_rectangle and self.current_rectangle:
+                self.draw_current_rectangle(painter)
+
+            if self.sam_magic_wand_active and self.sam_bbox:
+                self.draw_sam_bbox(painter)
+
+            # draw temp paint mask 
+            if self.temp_paint_mask is not None :
+                self.draw_temp_paint_mask(painter)
+
+            # draw temp eraser mask 
+            if self.temp_eraser_mask is not None :
+                self.draw_temp_eraser_mask(painter)
+
+            # draw brush/eraser size indicator
+            self.draw_tool_size_indicator(painter)
+
+            # draw temp YOLO predictions
+            if self.temp_annotations:
+                self.draw_temp_annotations(painter)
+
+            painter.end()
+
+    def draw_temp_annotations(self, painter):
+        painter.save()
+        painter.translate(self.offset_x, self.offset_y)
+        painter.scale(self.zoom_factor, self.zoom_factor)
+
+        for annotation in self.temp_annotations:
+            color  =QColor(255, 165, 0, 128) # semi transparent orange
+            painter.setPen(QPen(color, 2/self.zoom_factor, Qt.DashLine))
+            painter.setBrush(QBrush(color))
+
+            if "bbox" in annotation : 
+                x, y, w, h = annotation["bbox"]
+                painter.drawRect(QRectF(x, y, w, h))
+            
+            elif "segmentation" in annotation:
+                points = [QPointF(float(x), float(y)) for x, y in zip(annotation["segmentation"][0::2], annotation["segmentation"][1::2])]
+                painter.drawPolygon(QPolygonF(points)) 
+
+            # draw label and score 
+            painter.setFont(QFont("Arial", int(12/ self.zoom_factor)))
+            label = f"{annotation['category_name']}{annotation['score']:.2f}"
+            if "bbox" in annotation:
+                x, y, _ , _ = annotation["bbox"]
+                painter.drawText(QPointF(x, y - 5), label)
+
+            elif "segmentation" in annotation :
+                centroid = self.calculate_centroid(points)
+                if centroid:
+                    painter.drawText(centroid ,label)
+
+        painter.restore()
+    
+    def accept_temp_annotations(self):
+        for annotation in self.temp_annotations:
+            class_name = annotation['category_name']
+
+            # check if the class exists, if not exists add it
+            if class_name not in self.main_window.class_mapping:
+                self.main_window.add_class(class_name)
+
+            if class_name not in self.annotations :
+                self.annotations[class_name] = []
+
+            del annotation['temp']
+            del annotation['score'] # remove the score as it's not needed in the final annotation
+            self.annotations[class_name].append(annotation)
+            self.main_window.add_annotation_to_list(annotation)
+
+        self.temp_annotations.clear()
+        self.main_window.save_current_annotations()
+        self.main_window.update_slice_list_colors()
+        self.update()
+
+    def discard_temp_annotations(self):
+        self.temp_annotations.clear()
+        self.update()
+
+    def draw_temp_paint_mask(self,painter):
+        if self.temp_paint_mask is not None:
+            painter.save()
+            painter.translate(self.offset_x , self.offset_y)
+            painter.scale(self.zoom_factor, self.zoom_factor)
+
+            mask_image = QImage(self.temp_paint_mask.data, self.temp_paint_mask.shape[1], self.temp_paint_mask.shape[0], self.temp_paint_mask.shape[1], QImage.Format_Grayscale8)
+            mask_pixmap = QPixmap.fromImage(mask_image)
+            painter.setOpacity(0.5)
+            painter.drawPixmap(0, 0, mask_pixmap)
+            painter.setOpacity(1.0)
+
+            painter.restore()
+
+    def draw_temp_eraser_mask(self, painter):
+        if self.temp_eraser_mask is not None:
+            painter.save()
+            painter.translate(self.offset_x, self.offset_y)
+            painter.scale(self.zoom_factor, self.zoom_factor)
+
+            mask_image = QImage(self.temp_eraser_mask.data, self.temp_eraser_mask.shape[1], self.temp_eraser_mask.shape[0], self.temp_eraser_mask.shape[1], QImage.Format_Grayscale8)
+            mask_pixmap = QPixmap.fromImage(mask_image)
+            painter.setOpacity(0.5)
+            painter.drawPixmap(0, 0, mask_pixmap)
+            painter.setOpacity(1.0)
+
+            painter.restore()
+
+        
+    def draw_tool_size_indicator(self, painter):
+        if self.current_tool in ["paint_brush", "eraser"] and hasattr(self, 'cursor_pos'):
+            painter.save()
+            painter.translate(self.offset_x, self.offset_y)
+            painter.scale(self.zoom_factor, self.zoom_factor)
+
+            if self.current_tool == 'paint_brush':
+                size = self.main_window.paint_brush_size 
+                color = QColor(255, 0, 0, 128) # semi transaprent red
+            else: # eraser
+                size = self.main_window.eraser_size
+                color = QColor(0, 0, 255, 128) # semi transparent blue
+
+            # draw filled circle with lower opacity 
+            painter.setOpacity(0.3)
+            painter.setPen(Qt.NoPen)
+            painter.setBrush(color)
+            painter.drawEllipse(QPointF(self.cursor_pos[0], self.cursor_pos[1]), size, size)
+
+            # draw circle outline with full opacity 
+            painter.setOpacity(1.0)
+            painter.setPen(QPen(color.darker(150), 1 / self.zoom_factor, Qt.SolidLine))
+            painter.setBrush(Qt.NoBrush)
+            painter.drawEllipse(QPointF(self.cursor_pos[0], self.cursor_pos[1]), size, size)
+
+            # draw size text 
+            # reset the transform to ensure text is drawn at screen coordinate
+            painter.resetTransform()
+            font = QFont()
+            font.setPointSize(10)
+            painter.setFont(font)
+            painter.setPen(QPen(Qt.black)) # use black color for better visibilty
+
+            
+
+
                 
