@@ -64,6 +64,12 @@ class ImageLabel(QLabel):
         self.cursor_pos = None
 
         # sam 
+        self.sam_magic_wand_active = False
+        self.sam_bbox = None
+        self.drawing_sam_bbox = False
+        self.temp_sam_prediction = None
+
+        self.temp_annotations = []
 
     def set_main_window(self, main_window):
         self.main_window = main_window
@@ -408,7 +414,68 @@ class ImageLabel(QLabel):
             painter.setFont(font)
             painter.setPen(QPen(Qt.black)) # use black color for better visibilty
 
-            
+            # convert cursor poistion back to screen coordinates
+            screen_x = self.cursor_pos[0] * self.zoom_factor + self.offset_x
+            screen_y = self.cursor_pos[1] * self.zoom_factor + self.offset_y
 
+            # position text above the circle 
+            text_rect = QRectF(screen_x + (size * self.zoom_factor),
+                        screen_y - (size * self.zoom_factor),
+                        100, 20)
+
+            text = f"Size: {size}"
+            painter.drawText(text_rect, Qt.AlignLeft | Qt.AlignVCenter, text)
+
+            painter.restore()
+
+    def draw_paint_mask(self, painter):
+        if self.paint_mask is not None :
+            mask_image = QImage(self.paint_mask.data, self.paint_mask.shape[1], self.paint_mask.shape[0], self.paint_mask.shape[1], QImage.Format_Grayscale8)
+            mask_pixmap = QPixmap.fromImage(mask_image)
+            painter.setOpacity(0.5)
+            painter.drawPixmap(self.offset_x, self.offset_y, mask_pixmap.scaled(self.scaled_pixmap.size()))
+            painter.setOpacity(1.0)
+
+    def draw_eraser_mask(self, painter):
+        if self.eraser_mask is not None:
+            mask_image = QImage(self.eraser_mask.data , self.eraser_mask.shape[1], self.eraser_mask.shape[0], self.eraser_mask.shape[1], QImage.Format_Grayscale8)
+            mask_pixmap = QPixmap.fromImage(mask_image)
+            painter.setOpacity(0.5)
+            painter.drawPixmap(self.offset_x, self.offset_y, mask_pixmap.scaled(self.scaled_pixmap.size()))
+            painter.setOpacity(1.0)
+
+    def draw_sam_bbox(self, painter):
+        painter.save()
+        painter.translate(self.offset_x, self.offset_y)
+        painter.scale(self.zoom_factor, self.zoom_factor)
+        painter.setPen(QPen(Qt.red, 2 / self.zoom_factor, Qt.SolideLine))
+        x1, y1, x2, y2 = self.sam_bbox
+        painter.drawRect(QRectF(min(x1,x2), min(y1, y2), abs(x2-x1), abs(y2 - y1)))
+        painter.restore()
+    
+    def clear_temp_sam_prediction(self):
+        self.temp_sam_prediction = None
+        self.update()
+
+    def check_unsaved_changes(self):
+        if self.temp_paint_mask is not None or self.temp_eraser_mask is not None :
+            reply = QMessageBox.question(
+                self.main_window, 'Unsaved Changes',
+                "You have unsaved changes. do you want to save them?",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel 
+            )
+            if reply == QMessageBox.Yes :
+                if self.temp_paint_mask is not None:
+                    self.commit_paint_annotation()
+                if self.temp_eraser_mask is not None:
+                    self.commit_eraser_changes()
+                return True
+            elif reply == QMessageBox.No :
+                self.discard_paint_annotation()
+                self.discard_eraser_changes()
+                return True
+            else : # cancel
+                return False
+        return True # no unsaved changes
 
                 
