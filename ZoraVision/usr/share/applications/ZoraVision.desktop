@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=ZoraVision
+Exec=/usr/bin/ZoraVision
+Type=Application
+Icon=/usr/share/icons/logo.png
+Categories=Utility;

@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTextBrowser
 from PyQt5.QtCore import Qt
-from soft_dark_stylesheet import soft_dark_stylesheet
-from default_stylesheet import default_stylesheet
+from src.soft_dark_stylesheet import soft_dark_stylesheet
+from src.default_stylesheet import default_stylesheet
 
 class HelpWindow(QDialog):
     def __init__(self, dark_mode=False, font_size=10):
@@ -37,10 +37,10 @@ class HelpWindow(QDialog):
 
     def load_help_content(self):
         help_text = """
-        <h1>Image Annotator Help Guide</h1>
+        <h1>ZoraVision Help Guide</h1>
 
         <h2>Overview</h2>
-        <p>Image Annotator is a user-friendly GUI tool designed for generating masks for image segmentation and object detection. It allows users to create, edit, and save annotations in various formats, including COCO-style JSON, YOLO v8, and Pascal VOC. Annotations can be defined using manual tools like the polygon tool or in a semi-automated way with the assistance of the Segment Anything Model (SAM-2) pre-trained model. The tool supports multi-dimensional images such as TIFF stacks and CZI files and provides dark mode and adjustable application font sizes for enhanced GUI experience.</p>
+        <p>ZoraVision is a professional annotation tool designed for image segmentation and object detection, built as a standalone application. Based on <b>digitalsreeni-image-annotator</b>, it has been enhanced with improved usability, additional features, and a refined user interface. The application supports various annotation formats, including COCO-style JSON, YOLO v8, and Pascal VOC, and offers both manual and semi-automated annotation tools, leveraging the <b>Segment Anything Model (SAM-2)</b> for efficiency. ZoraVision also supports multi-dimensional images such as TIFF stacks and CZI files, providing an optimized user experience with dark mode and adjustable font sizes. For more details on modifications and usage, please refer to the license and official documentation.</p>
 
         <h2>Key Features</h2>
         <ul>
@@ -151,6 +151,6 @@ class HelpWindow(QDialog):
         </ul>
 
         <h2>Getting Help</h2>
-        <p>If you encounter any issues or have suggestions for improvement, please open an issue on our GitHub repository or contact the development team.</p>
+        <p>If you encounter any issues or have suggestions for improvement, please open an issue on our GitHub repository or contact the development team nereuscode@gmail.com.</p>
         """
         self.text_browser.setHtml(help_text)

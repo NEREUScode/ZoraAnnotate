@@ -1,2 +1,6 @@
 venv/ 
 test.py
+build/
+dist/
+ZoraVision/usr/bin/zora
+ZoraVision.deb

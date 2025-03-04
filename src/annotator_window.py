@@ -15,38 +15,37 @@ import cv2
 from datetime import datetime
 
 
-from image_label import ImageLabel
-from utils import calculate_area, calculate_bbox
-from help_window import HelpWindow
+from src.image_label import ImageLabel
+from src.utils import calculate_area, calculate_bbox
+from src.help_window import HelpWindow
 
-from soft_dark_stylesheet import soft_dark_stylesheet
-from default_stylesheet import default_stylesheet
+from src.soft_dark_stylesheet import soft_dark_stylesheet
+from src.default_stylesheet import default_stylesheet
 
-from dataset_splitter import DatasetSplitterTool
-from annotation_statistics import show_annotation_statistics
-from coco_json_combiner import show_coco_json_combiner
-from stack_to_slices import show_stack_to_slices
-from image_patcher import show_image_patcher
-from image_augmenter import show_image_augmenter
-from slice_registration import SliceRegistrationTool
-from sam_utils import SAMUtils
-from snake_game import SnakeGame
-from yolo_trainer import YOLOTrainer, TrainingInfoDialog, LoadPredictionModelDialog
-from stack_interpolator import StackInterpolator
-from dicom_converter import DicomConverter
+from src.dataset_splitter import DatasetSplitterTool
+from src.annotation_statistics import show_annotation_statistics
+from src.coco_json_combiner import show_coco_json_combiner
+from src.stack_to_slices import show_stack_to_slices
+from src.image_patcher import show_image_patcher
+from src.image_augmenter import show_image_augmenter
+from src.slice_registration import SliceRegistrationTool
+from src.sam_utils import SAMUtils
+from src.yolo_trainer import YOLOTrainer, TrainingInfoDialog, LoadPredictionModelDialog
+from src.stack_interpolator import StackInterpolator
+from src.dicom_converter import DicomConverter
 
 from shapely.geometry import Polygon, MultiPolygon, Point
 from shapely.ops import unary_union
 from shapely.validation import make_valid
 import shapely
 
-from export_formats import (
+from src.export_formats import (
     export_coco_json, export_yolo_v4, export_yolo_v5plus, export_labeled_images,
     export_semantic_labels, export_pascal_voc_bbox, export_pascal_voc_both
 )
 
-from import_formats import import_coco_json, import_yolo_v4, import_yolo_v5plus
-from import_formats import process_import_format
+from src.import_formats import import_coco_json, import_yolo_v4, import_yolo_v5plus
+from src.import_formats import process_import_format
 
 import shutil 
 import copy
@@ -118,7 +117,7 @@ class ImageAnnotator(QMainWindow):
         self.is_loading_project = False
         self.backup_project_path = None
         
-        self.setWindowTitle("Image Annotator")
+        self.setWindowTitle("ZoraVision")
         self.setGeometry(100, 100, 1400, 800)
     
         self.central_widget = QWidget()
@@ -1496,9 +1495,8 @@ class ImageAnnotator(QMainWindow):
             super().keyPressEvent(event)
             return
     
-        if event.key() == Qt.Key_F2:
-            self.launch_snake_game()
-        elif event.key() == Qt.Key_Delete:
+
+        if event.key() == Qt.Key_Delete:
             # Handle deletions
             if self.class_list.hasFocus() and self.class_list.currentItem():
                 self.delete_class(self.class_list.currentItem())
@@ -1540,13 +1538,6 @@ class ImageAnnotator(QMainWindow):
             if item.text().startswith("Temp-") and item.checkState() == Qt.Checked:
                 return True
         return False
-     
-    def launch_snake_game(self):
-        #print("Launching Snake game")
-        if not hasattr(self, 'snake_game') or not self.snake_game.isVisible():
-            self.snake_game = SnakeGame()
-        self.snake_game.show()
-        self.snake_game.setFocus()
         
     def import_annotations(self):
         if not self.image_label.check_unsaved_changes():    

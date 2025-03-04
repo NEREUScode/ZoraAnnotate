@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QPushButton,
 import yaml
 import numpy as np
 from pathlib import Path
-from export_formats import export_yolo_v5plus
+from src.export_formats import export_yolo_v5plus
 
 
 from collections import deque

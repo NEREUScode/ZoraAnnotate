@@ -1,0 +1,14 @@
+Package: ZoraVision
+Version: 0.1.0
+Architecture: amd64
+Maintainer: nereuscode@gmail.com
+Depends: python3, python3-pyqt5
+Description: ZoraVision is a professional annotation tool designed for image segmentation and object detection,
+ built as a standalone application. Based on digitalsreeni-image-annotator, 
+ it has been enhanced with improved usability, additional features, 
+ and a refined user interface. The application supports various annotation formats, 
+ including COCO-style JSON, YOLO v8, and Pascal VOC, and offers both manual and semi-automated annotation tools, 
+ leveraging the Segment Anything Model (SAM-2) for efficiency. 
+ ZoraVision also supports multi-dimensional images such as TIFF stacks and CZI files, 
+ providing an optimized user experience with dark mode and adjustable font sizes. 
+ For more details on modifications and usage, please refer to the license and official documentation.
